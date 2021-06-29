@@ -32,7 +32,7 @@
 5. 구매 상품에 대한 상품 재고를 변경 처리한다.
 6. 편의점주는 상품 발주를 취소할 수 있다.
 7. 고객이 상품 구매를 취소하면 재고가 변경된다.
-8. 편의점주는 발주 내용, 상품 재고 현황을 마이페이지에서 조회할 수 있다.
+8. 편의점주는 발주 내용, 상품 재고 현황을 조회할 수 있다.
 9. 편의점주는 발주, 배송, 상품 재고, 구매 현황들을 알림으로 받을 수 있다.
 
 비기능적 요구사항
@@ -123,8 +123,6 @@
 
 ### 이벤트 도출
 
-우선 시간의 흐름에 따라 비지니스의 상태 변경(생성,변경,삭제 등)을 의미하는 도메인 이벤트를 도출한다
-
 <img width="871" alt="스크린샷 2021-06-27 오후 5 19 58" src="https://user-images.githubusercontent.com/14067833/123537754-ff527a80-d76b-11eb-95c3-f87358bb97cf.png">
 
 ### 부적격 이벤트 탈락
@@ -150,22 +148,22 @@
 
 ```
 - 도메인 서열 분리 
-    - Core Domain: order, delivery, product : 없어서는 안될 핵심 서비스이며, 연견 Up-time SLA 수준을 99.999% 목표, 배포주기는 product 의 경우 1주일 1회 미만, order, delivery의 경우 1개월 1회 미만
+    - Core Domain: order, delivery, product : 없어서는 안될 핵심 서비스이며, 연견 Up-time SLA 수준을 99.999% 목표, 배포주기는 order, delivery 의 경우 1주일 1회 미만, product 의 경우 1개월 1회 미만
     - Supporting Domain: marketing, customer : 경쟁력을 내기위한 서비스이며, SLA 수준은 연간 60% 이상 uptime 목표, 배포주기는 각 팀의 자율이나 표준 스프린트 주기가 1주일 이므로 1주일 1회 이상을 기준으로 함.
     - General Domain: payment : 결제서비스로 3rd Party 외부 서비스를 사용하는 것이 경쟁력이 높음 (핑크색으로 이후 전환할 예정)
 ```
 
 ### 폴리시 부착 (괄호는 수행주체, 폴리시 부착을 둘째단계에서 해놔도 상관 없음. 전체 연계가 초기에 드러남)
 
-
+<img width="735" alt="스크린샷 2021-06-30 오전 12 38 36" src="https://user-images.githubusercontent.com/14067833/123827419-902b8080-d93b-11eb-9f4d-7cb49ee8d918.png">
 
 ### 폴리시의 이동과 컨텍스트 매핑 (점선은 Pub/Sub, 실선은 Req/Resp)
 
-
+<img width="1171" alt="스크린샷 2021-06-30 오전 12 57 48" src="https://user-images.githubusercontent.com/14067833/123830413-38424900-d93e-11eb-82e2-a50f1e04f7b7.png">
 
 ### 완성된 1차 모형
 
-
+<img width="1010" alt="스크린샷 2021-06-30 오전 1 16 09" src="https://user-images.githubusercontent.com/14067833/123832989-e222d500-d940-11eb-89dd-d89a74dce123.png">
 
 ```
 - View Model 추가
@@ -176,22 +174,10 @@
 
 
 ```
-- 고객이 메뉴를 선택하여 주문한다 (ok)
-- 고객이 결제한다 (ok)
-- 주문이 되면 주문 내역이 입점상점주인에게 전달된다 (ok)
-- 상점주인이 확인하여 요리해서 배달 출발한다 (ok)
-```
-
-
-
-\- 고객이 주문을 취소할 수 있다 (ok) - 주문이 취소되면 배달이 취소된다 (ok) - 고객이 주문상태를 중간중간 조회한다 (View-green sticker 의 추가로 ok) - 주문상태가 바뀔 때 마다 카톡으로 알림을 보낸다 (?)
-
-### 모델 수정
-
-
-
-```
-- 수정된 모델은 모든 요구사항을 커버함.
+- 편의점주가 상품을 발주 한다. (OK)
+- 본사가 발주된 상품을 배송 한다. (OK)
+- 배송이 완료되면 상품을 입고처리 한다. (OK)
+- 상품 발주시 편의점주는 view를 통해 발주 상세 내역, 상품 재고현황을 조회할 수 있다. (OK)
 ```
 
 ### 비기능 요구사항에 대한 검증
@@ -200,67 +186,14 @@
 
 ```
 - 마이크로 서비스를 넘나드는 시나리오에 대한 트랜잭션 처리
-    - 고객 주문시 결제처리:  결제가 완료되지 않은 주문은 절대 받지 않는다는 경영자의 오랜 신념(?) 에 따라, ACID 트랜잭션 적용. 주문와료시 결제처리에 대해서는 Request-Response 방식 처리
-    - 결제 완료시 점주연결 및 배송처리:  App(front) 에서 Store 마이크로서비스로 주문요청이 전달되는 과정에 있어서 Store 마이크로 서비스가 별도의 배포주기를 가지기 때문에 Eventual Consistency 방식으로 트랜잭션 처리함.
-    - 나머지 모든 inter-microservice 트랜잭션: 주문상태, 배달상태 등 모든 이벤트에 대해 카톡을 처리하는 등, 데이터 일관성의 시점이 크리티컬하지 않은 모든 경우가 대부분이라 판단, Eventual Consistency 를 기본으로 채택함.
+   - 발주 취소시 배송 취소처리: ACID 트랜잭션 적용. 발주 취소시 배송 취소 처리에 대해서는 Request-Response 방식 처리
+   - 배송 완료시 상품 입고처리: delivery 에서 product 마이크로서비스로 주문요청이 전달되는 과정에 있어서 product 마이크로 서비스가 별도의 배포주기를 가지기 때문에 Eventual Consistency 방식으로 트랜잭션 처리함.
+   - 나머지 모든 inter-microservice 트랜잭션: 배달상태, 재고현황 등 모든 이벤트에 대해 카톡을 처리하는 등, 데이터 일관성의 시점이 크리티컬하지 않은 모든 경우가 대부분이라 판단, Eventual Consistency 를 기본으로 채택함.
 ```
 
 ### 최종 모델링
 
 
-
-### 완성된 모형
-
-![image](https://user-images.githubusercontent.com/19424600/89304585-91f7b000-d6a8-11ea-9bed-daef9c3b3fe9.png)
-
-![image](https://user-images.githubusercontent.com/19424600/89304604-96bc6400-d6a8-11ea-9ff1-ea0186b49fe0.png)
-
-### 완성본에 대한 기능적/비기능적 요구사항을 커버하는지 검증
-
-![image](https://user-images.githubusercontent.com/19424600/89317152-f5d5a500-d6b7-11ea-82a8-c403f2393a28.png)
-
-1. 점장이 상품을 발주 한다. (OK)
-2. 본사가 발주된 상품을 배송 한다. (OK)
-3. 배송이 완료되면 알바가 상품을 입고처리 한다. (OK)
-4. 상품발주시 점장의 마이페이지에 발주상세view, 구매상세view 추가된다. (OK)
-
-![image](https://user-images.githubusercontent.com/19424600/89317254-169dfa80-d6b8-11ea-8715-d038d295332b.png)
-
-1. 고객이 상품을 구매한다. (OK)
-2. 상품구매시 상품의 재고가 변경 된다. (OK)
-3. 상품 구매시 점장 마이페이지에 구매상세view 변경된다. (OK)
-
-
-![image](https://user-images.githubusercontent.com/19424600/89317334-2d445180-d6b8-11ea-84ba-a57ad5987fb8.png)
-
-1. 고객이 상품구매를 취소한다. (OK)
-2. 상품구매 취소시 상품의 재고가 변경 된다. (OK)
-3. 상품구매 취소시 점장 마이페이지에 구매상세view 변경된다. (OK)
-
-
-### 비기능 요구사항에 대한 검증
-
-![image](https://user-images.githubusercontent.com/19424600/89317410-451bd580-d6b8-11ea-93a8-54f203decd8e.png)
-
-1. 트랜잭션
-
-- 상품발주 취소시 상품배송 자동 취소 처리 Sync 호출
-
-2. 장애격리
-
-- 마이페이지 기능이 수행되지 않더라도 구매는 365일 24시간 가능해야 한다 Async (event-driven), Eventual Consistency
-- 발주취소가 과중되면 배송취소를 잠시동안 받지 않고 배송취소를 잠시후에 하도록 유도한다 Circuit breaker, fallback
-
-3. 성능
-
-- 점장이 주문,판매 화면으로 매입매출을 조회할수 있어야 한다 CQRS
-- 구매가 발생할때 마다 상품재고가 변경될수 있어야 한다 Event driven
-
-
-- 마이크로 서비스를 넘나드는 시나리오에 대한 트랜잭션 처리
-  - 발주취소시 배송취소 처리 : 발주취소는 배송취소가 완료되지 않은 발주취소는 절대 받지 않는다는 편의점본사의 오랜 신념(?) 에 따라, ACID 트랜잭션 적용. 발주취소시 배송취소에 대해서는 Request-Response 방식 처리
-  - 배송완료시 알바가 상품입고처리 :  App(front) 에서 Store 마이크로서비스로 배송완료가 전달되는 과정에 있어서 Store 마이크로 서비스가 별도의 배포주기를 가지기 때문에 Eventual Consistency 방식으로 트랜잭션 처리함.
-  - 나머지 모든 inter-microservice 트랜잭션: 데이터 일관성의 시점이 크리티컬하지 않은 모든 경우가 대부분이라 판단, Eventual Consistency 를 기본으로 채택함.
 
 ## 헥사고날 아키텍처 다이어그램 도출
 
