@@ -2,30 +2,29 @@ package convenientstore;
 
 import javax.persistence.*;
 import org.springframework.beans.BeanUtils;
-import java.util.List;
-import java.util.Date;
 
 @Entity
 @Table(name="Delivery_table")
 public class Delivery {
 
     @Id
-    @GeneratedValue(strategy=GenerationType.AUTO)
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Long id;
     private Long orderId;
     private Long productId;
-    private Integer quantity;
+    private int quantity;
 
     @PostPersist
     public void onPostPersist(){
-        DeliveryStarted deliveryStarted = new DeliveryStarted();
-        BeanUtils.copyProperties(this, deliveryStarted);
+        DeliveryStarted deliveryStarted = new DeliveryStarted(id, orderId, productId, quantity);
         deliveryStarted.publishAfterCommit();
+    }
 
+    @PostUpdate
+    public void onPostUpdate() {
         DeliveryCanceled deliveryCanceled = new DeliveryCanceled();
         BeanUtils.copyProperties(this, deliveryCanceled);
         deliveryCanceled.publishAfterCommit();
-
     }
 
     public Long getId() {
@@ -49,15 +48,11 @@ public class Delivery {
     public void setProductId(Long productId) {
         this.productId = productId;
     }
-    public Integer getQuantity() {
+    public int getQuantity() {
         return quantity;
     }
 
-    public void setQuantity(Integer quantity) {
+    public void setQuantity(int quantity) {
         this.quantity = quantity;
     }
-
-
-
-
 }

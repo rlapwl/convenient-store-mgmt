@@ -1,9 +1,6 @@
 package convenientstore;
 
 import javax.persistence.*;
-import org.springframework.beans.BeanUtils;
-import java.util.List;
-import java.util.Date;
 
 @Entity
 @Table(name="Product_table")
@@ -12,19 +9,19 @@ public class Product {
     @Id
     @GeneratedValue(strategy=GenerationType.AUTO)
     private Long id;
-    private Integer quantity;
-    private Integer price;
+    private int quantity;
+    private int price;
+    private String status = "register";
 
-    @PostPersist
-    public void onPostPersist(){
-        StockAdded stockAdded = new StockAdded();
-        BeanUtils.copyProperties(this, stockAdded);
-        stockAdded.publishAfterCommit();
-
-        StockModified stockModified = new StockModified();
-        BeanUtils.copyProperties(this, stockModified);
+    @PostUpdate
+    public void onPostUpdate(){
+        StockModified stockModified = new StockModified(id, quantity, status);
         stockModified.publishAfterCommit();
+    }
 
+    public void addStock(int quantity) {
+        this.quantity += quantity;
+        this.status = "add";
     }
 
     public Long getId() {
@@ -34,22 +31,26 @@ public class Product {
     public void setId(Long id) {
         this.id = id;
     }
-    public Integer getQuantity() {
+    public int getQuantity() {
         return quantity;
     }
 
-    public void setQuantity(Integer quantity) {
+    public void setQuantity(int quantity) {
         this.quantity = quantity;
     }
-    public Integer getPrice() {
+    public int getPrice() {
         return price;
     }
 
-    public void setPrice(Integer price) {
+    public void setPrice(int price) {
         this.price = price;
     }
 
+    public String getStatus() {
+        return status;
+    }
 
-
-
+    public void setStatus(String status) {
+        this.status = status;
+    }
 }

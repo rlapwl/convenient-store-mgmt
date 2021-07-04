@@ -2,33 +2,26 @@ package convenientstore;
 
 public class StockModified extends AbstractEvent {
 
-    private Long id;
-    private Integer quantity;
-    private String status;
+    private final Long id;
+    private final int quantity;
+    private final String status;
 
-    public StockModified(){
+    public StockModified(final Long id, final int quantity, final String status) {
         super();
+        this.id = id;
+        this.quantity = quantity;
+        this.status = status;
     }
 
     public Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-    public Integer getQuantity() {
+    public int getQuantity() {
         return quantity;
     }
 
-    public void setQuantity(Integer quantity) {
-        this.quantity = quantity;
-    }
     public String getStatus() {
         return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
     }
 }

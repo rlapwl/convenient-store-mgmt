@@ -52,16 +52,7 @@ public class PolicyHandler{
         // Sample Logic //
         System.out.println("\n\n##### listener SendMessage : " + deliveryCanceled.toJson() + "\n\n");
     }
-    @StreamListener(KafkaProcessor.INPUT)
-    public void wheneverStockAdded_SendMessage(@Payload StockAdded stockAdded){
-
-        if(!stockAdded.validate()) return;
-        // Get Methods
-
-
-        // Sample Logic //
-        System.out.println("\n\n##### listener SendMessage : " + stockAdded.toJson() + "\n\n");
-    }
+    
     @StreamListener(KafkaProcessor.INPUT)
     public void wheneverStockModified_SendMessage(@Payload StockModified stockModified){
 

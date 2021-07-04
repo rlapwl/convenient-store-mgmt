@@ -12,10 +12,6 @@ import org.springframework.stereotype.Service;
 public class PolicyHandler{
     @Autowired DeliveryRepository deliveryRepository;
 
-
-
     @StreamListener(KafkaProcessor.INPUT)
     public void whatever(@Payload String eventString){}
-
-
 }

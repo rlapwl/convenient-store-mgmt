@@ -2,46 +2,43 @@ package convenientstore;
 
 import javax.persistence.*;
 import org.springframework.beans.BeanUtils;
-import java.util.List;
-import java.util.Date;
+
+import convenientstore.external.Delivery;
 
 @Entity
 @Table(name="Order_table")
 public class Order {
 
     @Id
-    @GeneratedValue(strategy=GenerationType.AUTO)
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false)
     private Long productId;
-    private Integer quantity;
-    private String status;
+
+    private int quantity;
+
+    private String status = "Order";
 
     @PostPersist
-    public void onPostPersist(){
-        Ordered ordered = new Ordered();
-        BeanUtils.copyProperties(this, ordered);
-        ordered.publishAfterCommit();
-
-        //Following code causes dependency to external APIs
-        // it is NOT A GOOD PRACTICE. instead, Event-Policy mapping is recommended.
-
-        convenientstore.external.Delivery delivery = new convenientstore.external.Delivery();
-        // mappings goes here
-        Application.applicationContext.getBean(convenientstore.external.DeliveryService.class)
+    public void onPostPersist() {
+        Delivery delivery = new Delivery(id, productId, quantity);
+        OrderApplication.applicationContext.getBean(convenientstore.external.DeliveryService.class)
             .deliver(delivery);
 
+        Ordered ordered = new Ordered(id, productId, quantity, status);
+        ordered.publishAfterCommit();
+    }
+
+    @PreRemove
+    public void onPreRemove() {
         OrderCanceled orderCanceled = new OrderCanceled();
         BeanUtils.copyProperties(this, orderCanceled);
         orderCanceled.publishAfterCommit();
 
-        //Following code causes dependency to external APIs
-        // it is NOT A GOOD PRACTICE. instead, Event-Policy mapping is recommended.
-
-        convenientstore.external.Delivery delivery = new convenientstore.external.Delivery();
-        // mappings goes here
-        Application.applicationContext.getBean(convenientstore.external.DeliveryService.class)
-            .cancelDelivery(delivery);
-
+        // Delivery delivery = new Delivery();
+        // OrderApplication.applicationContext.getBean(convenientstore.external.DeliveryService.class)
+        //     .cancelDelivery(delivery);
     }
 
     public Long getId() {
@@ -58,11 +55,11 @@ public class Order {
     public void setProductId(Long productId) {
         this.productId = productId;
     }
-    public Integer getQuantity() {
+    public int getQuantity() {
         return quantity;
     }
 
-    public void setQuantity(Integer quantity) {
+    public void setQuantity(int quantity) {
         this.quantity = quantity;
     }
     public String getStatus() {
@@ -72,8 +69,4 @@ public class Order {
     public void setStatus(String status) {
         this.status = status;
     }
-
-
-
-
 }

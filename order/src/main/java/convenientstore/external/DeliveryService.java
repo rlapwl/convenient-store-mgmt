@@ -2,16 +2,18 @@
 package convenientstore.external;
 
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 
-import java.util.Date;
-
-@FeignClient(name="delivery", url="http://delivery:8080")
+//@FeignClient(name="delivery", url="http://delivery:8080/deliveries")
+@FeignClient(name="delivery", url="http://localhost:8082/deliveries")
 public interface DeliveryService {
-    @RequestMapping(method= RequestMethod.GET, path="/deliveries")
+
+    @PostMapping
+    public void deliver(@RequestBody Delivery delivery);
+
+    @PutMapping
     public void cancelDelivery(@RequestBody Delivery delivery);
 
 }

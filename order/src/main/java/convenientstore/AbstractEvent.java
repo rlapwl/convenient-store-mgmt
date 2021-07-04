@@ -68,7 +68,6 @@ public class AbstractEvent {
         });
     }
 
-
     public String getEventType() {
         return eventType;
     }
