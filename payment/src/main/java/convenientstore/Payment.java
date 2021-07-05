@@ -8,23 +8,28 @@ import org.springframework.beans.BeanUtils;
 public class Payment {
 
     @Id
-    @GeneratedValue(strategy=GenerationType.AUTO)
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false)
     private Long productId;
+
     private int quantity;
+    
     private int price;
-    private String status;
 
     @PostPersist
-    public void onPostPersist(){
-        PayApproved payApproved = new PayApproved();
-        BeanUtils.copyProperties(this, payApproved);
+    public void onPostPersist() {
+        PayApproved payApproved = new PayApproved(id, productId, quantity, price);
         payApproved.publishAfterCommit();
 
+    }
+
+    @PreRemove
+    public void onPreRemove() {
         PayCanceled payCanceled = new PayCanceled();
         BeanUtils.copyProperties(this, payCanceled);
         payCanceled.publishAfterCommit();
-
     }
 
     public Long getId() {
@@ -57,14 +62,6 @@ public class Payment {
 
     public void setPrice(int price) {
         this.price = price;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getStatus() {
-        return status;
     }
 
 }

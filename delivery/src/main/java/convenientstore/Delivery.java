@@ -1,7 +1,5 @@
 package convenientstore;
 
-import java.util.Objects;
-
 import javax.persistence.*;
 
 @Entity

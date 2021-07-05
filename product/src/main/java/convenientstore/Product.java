@@ -7,7 +7,7 @@ import javax.persistence.*;
 public class Product {
 
     @Id
-    @GeneratedValue(strategy=GenerationType.AUTO)
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Long id;
     private int quantity;
     private int price;
@@ -22,6 +22,11 @@ public class Product {
     public void addStock(int quantity) {
         this.quantity += quantity;
         this.status = "add";
+    }
+
+    public void subtractStock(int quantity) {
+        this.quantity -= quantity;
+        this.status = "subtract";
     }
 
     public Long getId() {

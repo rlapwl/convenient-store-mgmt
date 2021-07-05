@@ -30,22 +30,26 @@ public class PolicyHandler{
     @StreamListener(KafkaProcessor.INPUT)
     public void wheneverPayApproved_ModifyStock(@Payload PayApproved payApproved){
 
-        if(!payApproved.validate()) return;
-        // Get Methods
+        if(!payApproved.validate()) {
+            return;
+        }
 
-
-        // Sample Logic //
         System.out.println("\n\n##### listener ModifyStock : " + payApproved.toJson() + "\n\n");
+
+        Product product = productRepository.findById(payApproved.getProductId()).get();
+        product.subtractStock(payApproved.getQuantity());
+        productRepository.save(product);
     }
+
     @StreamListener(KafkaProcessor.INPUT)
     public void wheneverPayCanceled_ModifyStock(@Payload PayCanceled payCanceled){
 
-        if(!payCanceled.validate()) return;
-        // Get Methods
+        if(!payCanceled.validate()) {
+            return;
+        }
 
-
-        // Sample Logic //
         System.out.println("\n\n##### listener ModifyStock : " + payCanceled.toJson() + "\n\n");
+        
     }
 
 
