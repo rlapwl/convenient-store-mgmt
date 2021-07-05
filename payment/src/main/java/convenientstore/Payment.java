@@ -1,7 +1,6 @@
 package convenientstore;
 
 import javax.persistence.*;
-import org.springframework.beans.BeanUtils;
 
 @Entity
 @Table(name="Payment_table")
