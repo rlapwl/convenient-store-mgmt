@@ -7,10 +7,20 @@ import javax.persistence.*;
 public class ProductPage {
 
     @Id
-    @GeneratedValue(strategy=GenerationType.AUTO)
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Long id;
-    private Integer quantity;
-    private Integer price;
+    private int quantity;
+    private int price;
+    private String status;
+
+    protected ProductPage() {
+    }
+
+    public ProductPage(final int quantity, final int price, final String status) {
+        this.quantity = quantity;
+        this.price = price;
+        this.status = status;
+    }
 
     public Long getId() {
         return id;
@@ -19,19 +29,29 @@ public class ProductPage {
     public void setId(Long id) {
         this.id = id;
     }
-    public Integer getQuantity() {
+
+    public int getQuantity() {
         return quantity;
     }
 
-    public void setQuantity(Integer quantity) {
+    public void setQuantity(int quantity) {
         this.quantity = quantity;
     }
-    public Integer getPrice() {
+
+    public int getPrice() {
         return price;
     }
 
-    public void setPrice(Integer price) {
+    public void setPrice(int price) {
         this.price = price;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
 }

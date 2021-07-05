@@ -15,7 +15,7 @@ public class Product {
 
     @PostUpdate
     public void onPostUpdate(){
-        StockModified stockModified = new StockModified(id, quantity, status);
+        StockModified stockModified = new StockModified(id, quantity, price, status);
         stockModified.publishAfterCommit();
     }
 
