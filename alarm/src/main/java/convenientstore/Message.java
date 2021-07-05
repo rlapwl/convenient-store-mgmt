@@ -7,19 +7,24 @@ import javax.persistence.*;
 public class Message {
 
     @Id
-    @GeneratedValue(strategy=GenerationType.AUTO)
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Long id;
 
+    private String content;
+
+    protected Message() {
+    }
+
+    public Message(String content) {
+        this.content = content;
+    }
 
     public Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public String getContent() {
+        return content;
     }
-
-
-
 
 }
