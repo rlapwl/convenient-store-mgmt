@@ -49,12 +49,14 @@ public class PolicyHandler{
         }
 
         System.out.println("\n\n##### listener ModifyStock : " + payCanceled.toJson() + "\n\n");
-        
+
+        Product product = productRepository.findById(payCanceled.getProductId()).get();
+        product.addStock(payCanceled.getQuantity());
+        productRepository.save(product);
     }
 
 
     @StreamListener(KafkaProcessor.INPUT)
     public void whatever(@Payload String eventString){}
-
 
 }

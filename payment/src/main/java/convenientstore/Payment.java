@@ -27,8 +27,7 @@ public class Payment {
 
     @PreRemove
     public void onPreRemove() {
-        PayCanceled payCanceled = new PayCanceled();
-        BeanUtils.copyProperties(this, payCanceled);
+        PayCanceled payCanceled = new PayCanceled(id, productId, quantity, price);
         payCanceled.publishAfterCommit();
     }
 

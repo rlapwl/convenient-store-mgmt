@@ -2,33 +2,32 @@ package convenientstore;
 
 public class PayCanceled extends AbstractEvent {
 
-    private Long id;
-    private Long productId;
-    private Integer quantity;
+    private final Long id;
+    private final Long productId;
+    private final int quantity;
+    private final int price;
 
-    public PayCanceled(){
+    public PayCanceled(final Long id, final Long productId, final int quantity, final int price){
         super();
+        this.id = id;
+        this.productId = productId;
+        this.quantity = quantity;
+        this.price = price;
     }
 
     public Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
     public Long getProductId() {
         return productId;
     }
 
-    public void setProductId(Long productId) {
-        this.productId = productId;
-    }
-    public Integer getQuantity() {
+    public int getQuantity() {
         return quantity;
     }
 
-    public void setQuantity(Integer quantity) {
-        this.quantity = quantity;
+    public int getPrice() {
+        return price;
     }
 }
