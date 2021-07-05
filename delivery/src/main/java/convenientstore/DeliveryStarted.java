@@ -14,7 +14,7 @@ public class DeliveryStarted extends AbstractEvent {
         this.orderId = orderId;
         this.productId = productId;
         this.quantity = quantity;
-        this.status = "Delivery";
+        this.status = "delivery";
     }
 
     public Long getId() {

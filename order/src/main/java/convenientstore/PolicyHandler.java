@@ -34,7 +34,11 @@ public class PolicyHandler{
             return;
         }
         
-        //System.out.println("\n\n##### listener ModifyStatus : " + deliveryCanceled.toJson() + "\n\n");
+        System.out.println("\n\n##### listener ModifyStatus : " + deliveryCanceled.toJson() + "\n\n");
+
+        Order order = orderRepository.findById(deliveryCanceled.getOrderId()).get();
+        order.setStatus(deliveryCanceled.getStatus());
+        orderRepository.save(order);
     }
 
 

@@ -6,11 +6,13 @@ public class Delivery {
     private Long orderId;
     private Long productId;
     private int quantity;
+    private String status;  // delivery: 배송, cancel: 배송 취소
 
-    public Delivery(final Long orderId, final Long productId, final int quantity) {
+    public Delivery(final Long orderId, final Long productId, final int quantity, final String status) {
         this.orderId = orderId;
         this.productId = productId;
-        this. quantity = quantity;
+        this.quantity = quantity;
+        this.status = status;
     }
 
     public Long getId() {
@@ -27,6 +29,10 @@ public class Delivery {
 
     public int getQuantity() {
         return quantity;
+    }
+
+    public String getStatus() {
+        return status;
     }
 
 }

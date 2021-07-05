@@ -2,8 +2,6 @@ package convenientstore;
 
 import javax.persistence.*;
 import org.springframework.beans.BeanUtils;
-import java.util.List;
-import java.util.Date;
 
 @Entity
 @Table(name="Payment_table")
@@ -13,8 +11,9 @@ public class Payment {
     @GeneratedValue(strategy=GenerationType.AUTO)
     private Long id;
     private Long productId;
-    private Integer quantity;
-    private Integer price;
+    private int quantity;
+    private int price;
+    private String status;
 
     @PostPersist
     public void onPostPersist(){
@@ -35,6 +34,7 @@ public class Payment {
     public void setId(Long id) {
         this.id = id;
     }
+
     public Long getProductId() {
         return productId;
     }
@@ -42,22 +42,29 @@ public class Payment {
     public void setProductId(Long productId) {
         this.productId = productId;
     }
-    public Integer getQuantity() {
+
+    public int getQuantity() {
         return quantity;
     }
 
-    public void setQuantity(Integer quantity) {
+    public void setQuantity(int quantity) {
         this.quantity = quantity;
     }
-    public Integer getPrice() {
+
+    public int getPrice() {
         return price;
     }
 
-    public void setPrice(Integer price) {
+    public void setPrice(int price) {
         this.price = price;
     }
 
+    public void setStatus(String status) {
+        this.status = status;
+    }
 
-
+    public String getStatus() {
+        return status;
+    }
 
 }

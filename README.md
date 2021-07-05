@@ -163,7 +163,7 @@
 
 ### 완성된 1차 모형
 
-<img width="1009" alt="스크린샷 2021-07-04 오전 9 31 02" src="https://user-images.githubusercontent.com/14067833/124369784-a5414000-dcaa-11eb-8584-e94bf91b64c3.png">
+<img width="1026" alt="스크린샷 2021-07-05 오전 5 30 15" src="https://user-images.githubusercontent.com/14067833/124398711-1b4cb200-dd52-11eb-9038-f1ee05d972eb.png">
 
 ```
 - View Model 추가
