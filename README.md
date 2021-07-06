@@ -15,8 +15,8 @@
     - [동기식 호출 과 Fallback 처리](#동기식-호출-과-Fallback-처리)
     - [비동기식 호출 과 Eventual Consistency](#비동기식-호출-과-Eventual-Consistency)
   - [운영](#운영)
-    - [CI/CD 설정](#cicd설정)
-    - [동기식 호출 / 서킷 브레이킹 / 장애격리](#동기식-호출-서킷-브레이킹-장애격리)
+    - [CI/CD 설정](#ci/cd-설정)
+    - [동기식 호출 / 서킷 브레이킹 / 장애격리](#동기식-호출-/-서킷-브레이킹-/-장애격리)
     - [오토스케일 아웃](#오토스케일-아웃)
     - [무정지 재배포](#무정지-재배포)
   - [신규 개발 조직의 추가](#신규-개발-조직의-추가)
@@ -262,11 +262,11 @@ public class Payment {
         payCanceled.publishAfterCommit();
     }
 
-  	// getter
-		// ...
+  // getter
+...
 		
-  	// setter
-		// ...
+  // setter
+...
 }
 ```
 
@@ -427,8 +427,6 @@ public class PolicyHandler{
         if(!deliveryStarted.validate()) {
             return;
         }
-
-        System.out.println("\n\n##### listener AddStock : " + deliveryStarted.toJson() + "\n\n");
         
         Product product = productRepository.findById(deliveryStarted.getProductId()).get();
         product.addStock(deliveryStarted.getQuantity());
@@ -450,6 +448,13 @@ public class PolicyHandler{
 
 # 운영
 
+## CI/CD 설정
+
+각 구현체들은 각자의 source repository 에 구성되었고, 사용한 CI/CD 플랫폼은 AWS를 사용하였으며, CodeBuild script 는 각 프로젝트 폴더 이하에 buildspec.yml 에 포함되었다.
+
+- 적용 화면
+
+<img width="1036" alt="스크린샷 2021-07-07 오전 12 29 57" src="https://user-images.githubusercontent.com/14067833/124627470-8c0ede00-deba-11eb-9e1c-49c0cf786d3b.png">
 
 ## 동기식 호출 / 서킷 브레이킹 / 장애격리
 
