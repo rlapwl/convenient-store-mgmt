@@ -10,8 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-//@FeignClient(name = "delivery", url = "http://delivery:8080")
-@FeignClient(name = "delivery", url = "http://localhost:8082")
+@FeignClient(name = "delivery", url = "${api.url.delivery}")
 @RequestMapping("/deliveries")
 public interface DeliveryService {
 

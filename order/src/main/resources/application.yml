@@ -30,6 +30,9 @@ spring:
         event-out:
           destination: convenientstore
           contentType: application/json
+api:
+  url:
+    delivery: http://localhost:8082
 
 logging:
   level:
@@ -62,3 +65,6 @@ spring:
         event-out:
           destination: convenientstore
           contentType: application/json
+api:
+  url:
+    delivery: http://gateway:8080
