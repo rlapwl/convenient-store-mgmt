@@ -234,10 +234,6 @@ mvn spring-boot:run
 - 각 서비스내에 도출된 핵심 Aggregate Root 객체를 Entity 로 선언하였다: (예시는 Payment 마이크로 서비스). 이때 가능한 현업에서 사용하는 언어 (유비쿼터스 랭귀지)를 그대로 사용하려고 노력했다. 하지만, 일부 구현에 있어서 영문이 아닌 경우는 실행이 불가능한 경우가 있기 때문에 계속 사용할 방법은 아닌것 같다. (Maven pom.xml, Kafka의 topic id, FeignClient 의 서비스 id 등은 한글로 식별자를 사용하는 경우 오류가 발생하는 것을 확인하였다)
 
 ```java
-package convenientstore;
-
-import javax.persistence.*;
-
 @Entity
 @Table(name="Payment_table")
 public class Payment {
@@ -266,11 +262,11 @@ public class Payment {
         payCanceled.publishAfterCommit();
     }
 
-		// getter
-		...
+  // getter
+	...
 		
-		// setter
-		...
+  // setter
+	...
 }
 ```
 
@@ -379,66 +375,66 @@ http PATCH http://localhost:8088/orders/1 orderStatus="CANCELLED" #Success
 ## 비동기식 호출 / 시간적 디커플링 / 장애격리 / 최종 (Eventual) 일관성 테스트
 
 
-배송이 이루어진 후에 상품시스템으로 이를 알려주는 행위는 동기식이 아니라 비 동기식으로 처리하여, 배송 처리를 위하여 상품처리가 블로킹 되지 않아도록 처리한다.
+배송이 이루어진 후에 상품시스템으로 이를 알려주는 행위는 동기식이 아니라 비동기식으로 처리하여, 배송 처리를 위하여 상품처리가 블로킹 되지 않아도록 처리한다.
 
 - 이를 위하여 배송처리 기록을 남긴 후에 곧바로 상품입고 되었다는 도메인 이벤트를 카프카로 송출한다(Publish)
 
-```
-package PEJ;
-...
-
+```java
 @Entity
-@Table(name="Delivery_table")
+@Table(name = "Delivery_table")
 public class Delivery {
 
     @Id
-    @GeneratedValue(strategy=GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false)
     private Long orderId;
-    private String deliveryStatus;
-    private String prdId;
-    private Integer prdQty;
-    private Integer prdPrice;
-    private String prdNm;
+
+    @Column(nullable = false)
+    private Long productId;
+
+    private int quantity;
+
+    private String status; // delivery: 배송, cancel: 배송 취소
 
     @PostPersist
-    public void onPostPersist(){
-        if(!"CANCELLED".equals(this.deliveryStatus)){
-            Shipped shipped = new Shipped();
-            BeanUtils.copyProperties(this, shipped);
-            shipped.publishAfterCommit();
+    public void onPostPersist() {
+        if ("delivery".equals(this.status)) {
+            DeliveryStarted deliveryStarted = new DeliveryStarted(id, orderId, productId, quantity);
+            deliveryStarted.publishAfterCommit();
         }
     }
-    
+  ...
+}
 ```
 
 - 상품 서비스에서는 입고처리 이벤트에 대해서 이를 수신하여 자신의 정책을 처리하도록 PolicyHandler 를 구현한다:
 
-```
-package PEJ;
-
+```java
 @Service
 public class PolicyHandler{
+    private final ProductRepository productRepository;
 
-    @StreamListener(KafkaProcessor.INPUT)
-    public void wheneverShipped_ReceiveProduct(@Payload Shipped shipped){
-
-        if(shipped.isMe()){
-            System.out.println("##### listener ReceiveProduct : " + shipped.toJson());
-        }
-
-        if(shipped.isMe()){
-            Product product = new Product();
-            product.setPrdId(shipped.getPrdId());
-            product.setPrdQty(shipped.getPrdQty());
-            product.setPrdNm(shipped.getPrdNm());
-            product.setPrdPrice(shipped.getPrdPrice());
-
-            productRepository.save(product);
-        }
-
+    public PolicyHandler(final ProductRepository productRepository) {
+        this.productRepository = productRepository;
     }
 
+    @StreamListener(KafkaProcessor.INPUT)
+    public void wheneverDeliveryStarted_ModifyStock(@Payload DeliveryStarted deliveryStarted){
+
+        if(!deliveryStarted.validate()) {
+            return;
+        }
+
+        System.out.println("\n\n##### listener AddStock : " + deliveryStarted.toJson() + "\n\n");
+        
+        Product product = productRepository.findById(deliveryStarted.getProductId()).get();
+        product.addStock(deliveryStarted.getQuantity());
+        productRepository.save(product);
+    }
+  ...
+}
 ```
 
 배송시스템은 상품시스템과 완전히 분리되어있으며, 이벤트 수신에 따라 처리되기 때문에, 상품시스템이 유지보수로 인해 잠시 내려간 상태라도 배송처리를 하는데 문제가 없다:
