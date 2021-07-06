@@ -262,11 +262,11 @@ public class Payment {
         payCanceled.publishAfterCommit();
     }
 
-  // getter
-	...
+  	// getter
+		// ...
 		
-  // setter
-	...
+  	// setter
+		// ...
 }
 ```
 
@@ -284,7 +284,8 @@ public interface PaymentRepository extends PagingAndSortingRepository<Payment, L
 ```
 
 - 적용 후 REST API 의 테스트
-- 발주
+- 상품 등록
+- 상품 발주
   ![image](https://user-images.githubusercontent.com/19424600/89304692-b5225f80-d6a8-11ea-802b-926b77f2e737.png)
   ![image](https://user-images.githubusercontent.com/19424600/89304762-cb302000-d6a8-11ea-9ac9-6bee1b295652.png)
   ![image](https://user-images.githubusercontent.com/19424600/89304808-dc792c80-d6a8-11ea-8547-c8ec4ceae8bc.png)
@@ -293,19 +294,19 @@ public interface PaymentRepository extends PagingAndSortingRepository<Payment, L
   ![image](https://user-images.githubusercontent.com/19424600/89305031-1cd8aa80-d6a9-11ea-92c4-b00759e51e1a.png)
 
 
-- 발주취소
+- 상품 발주 취소
   ![image](https://user-images.githubusercontent.com/19424600/89305107-2feb7a80-d6a9-11ea-8e12-6178605d3b04.png)
   ![image](https://user-images.githubusercontent.com/19424600/89305243-62957300-d6a9-11ea-97e1-a30d9b8f2f6c.png)
   ![image](https://user-images.githubusercontent.com/19424600/89305303-72ad5280-d6a9-11ea-93b0-79aa95b78ebb.png)
   ![image](https://user-images.githubusercontent.com/19424600/89305358-81940500-d6a9-11ea-9f60-52e290658565.png)
 
 
-- 구매
+- 상품 구매
   ![image](https://user-images.githubusercontent.com/19424600/89305411-91134e00-d6a9-11ea-844b-8034f6f11eab.png)
   ![image](https://user-images.githubusercontent.com/19424600/89305531-b6a05780-d6a9-11ea-8261-2ae42cf1bc04.png)
   ![image](https://user-images.githubusercontent.com/19424600/89305569-c5870a00-d6a9-11ea-90f5-2efc5298f994.png)
 
-- 구매취소
+- 상품 구매 취소
   ![image](https://user-images.githubusercontent.com/19424600/89305637-dcc5f780-d6a9-11ea-9c70-627f41bfacf9.png)
   ![image](https://user-images.githubusercontent.com/19424600/89305669-e8b1b980-d6a9-11ea-8505-faebf06f5969.png)
   ![image](https://user-images.githubusercontent.com/19424600/89305716-f6ffd580-d6a9-11ea-8950-7a18a025ecd5.png)
@@ -511,3 +512,4 @@ CPU 부하를 주지 못한 것으로 추정된다.
   ![image](https://user-images.githubusercontent.com/19424600/89368185-d705fb80-d715-11ea-84e5-2079f6851a1d.png)
 
 배포기간 동안 Availability 가 변화없기 때문에 무정지 재배포가 성공한 것으로 확인됨.
+
