@@ -16,7 +16,7 @@
     - [비동기식 호출 과 Eventual Consistency](#비동기식-호출-과-Eventual-Consistency)
   - [운영](#운영)
     - [CI/CD 설정](#ci/cd-설정)
-    - [동기식 호출 / 서킷 브레이킹 / 장애격리](#동기식-호출-/-서킷-브레이킹-/-장애격리)
+    - [동기식 호출 / 서킷 브레이킹 / 장애격리](#-----------------------)
     - [오토스케일 아웃](#오토스케일-아웃)
     - [무정지 재배포](#무정지-재배포)
   - [신규 개발 조직의 추가](#신규-개발-조직의-추가)
@@ -283,8 +283,12 @@ public interface PaymentRepository extends PagingAndSortingRepository<Payment, L
 }
 ```
 
-- 적용 후 REST API 의 테스트
+#### 적용 후 REST API 의 테스트
+
 - 상품 등록
+
+
+
 - 상품 발주
   ![image](https://user-images.githubusercontent.com/19424600/89304692-b5225f80-d6a8-11ea-802b-926b77f2e737.png)
   ![image](https://user-images.githubusercontent.com/19424600/89304762-cb302000-d6a8-11ea-9ac9-6bee1b295652.png)
