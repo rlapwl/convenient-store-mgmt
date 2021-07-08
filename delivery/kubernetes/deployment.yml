@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: delivery
-          image: 006020783695.dkr.ecr.ap-northeast-2.amazonaws.com/delivery:latest
+          image: 879772956301.dkr.ecr.ap-northeast-2.amazonaws.com/user02-delivery:v1
           ports:
             - containerPort: 8080
           readinessProbe:
