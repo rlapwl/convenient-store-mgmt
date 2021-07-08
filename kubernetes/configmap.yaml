@@ -2,5 +2,6 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: convenientstore-config
+  namespace: convenientstore
 data:
   api.url.delivery: http://delivery:8080

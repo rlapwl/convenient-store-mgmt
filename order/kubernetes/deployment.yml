@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: order
+  namespace: convenientstore
   labels:
     app: order
 spec:
@@ -26,19 +27,19 @@ spec:
                 configMapKeyRef:
                   name: convenientstore-config
                   key: api.url.delivery
-          # readinessProbe:
-          #   httpGet:
-          #     path: '/actuator/health'
-          #     port: 8080
-          #   initialDelaySeconds: 10
-          #   timeoutSeconds: 2
-          #   periodSeconds: 5
-          #   failureThreshold: 10
-          # livenessProbe:
-          #   httpGet:
-          #     path: '/actuator/health'
-          #     port: 8080
-          #   initialDelaySeconds: 120
-          #   timeoutSeconds: 2
-          #   periodSeconds: 5
-          #   failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: '/actuator/health'
+              port: 8080
+            initialDelaySeconds: 10
+            timeoutSeconds: 2
+            periodSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: '/actuator/health'
+              port: 8080
+            initialDelaySeconds: 60
+            timeoutSeconds: 2
+            periodSeconds: 5
+            failureThreshold: 5
