@@ -16,6 +16,7 @@ spec:
     spec:
       containers:
         - name: gateway
-          image: 006020783695.dkr.ecr.ap-northeast-2.amazonaws.com/gateway:latest
+          image: 879772956301.dkr.ecr.ap-northeast-2.amazonaws.com/user02-gateway:v2
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
