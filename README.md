@@ -11,16 +11,20 @@
   - [체크포인트](#체크포인트)
   - [분석/설계](#분석설계)
   - [구현:](#구현-)
+    - [CQRS](#cqrs)
+    - [API 게이트웨이](#api-게이트웨이)
+    - [Correlation](#correlation)
     - [DDD 의 적용](#ddd-의-적용)
     - [폴리글랏 퍼시스턴스](#폴리글랏-퍼시스턴스)
-    - [폴리글랏 프로그래밍](#폴리글랏-프로그래밍)
-    - [동기식 호출 과 Fallback 처리](#동기식-호출-과-Fallback-처리)
-    - [비동기식 호출 과 Eventual Consistency](#비동기식-호출-과-Eventual-Consistency)
+    - [동기식 호출과 Fallback 처리](#동기식-호출과-Fallback-처리)
+    - [비동기식 호출 / 시간적 디커플링 / 장애격리 / 최종 (Eventual) 일관성 테스트](#비동기식-호출-/-시간적 디커플링-/-장애격리-/-최종-(Eventual)-일관성-테스트)
   - [운영](#운영)
     - [CI/CD 설정](#ci/cd-설정)
-    - [동기식 호출 / 서킷 브레이킹 / 장애격리](#-----------------------)
+    - [동기식 호출 / 서킷 브레이킹 / 장애격리](#동기식-호출-/-서킷-브레이킹-/-장애격리)
     - [오토스케일 아웃](#오토스케일-아웃)
-    - [무정지 재배포](#무정지-재배포)
+    - [무정지 재배포(Readiness Probe)](#무정지-재배포(Readiness-Probe))
+    - [Self-healing(Liveness Probe)](#Self-healing(Liveness-Probe))
+    - [Config Map/Persistence Volume](#Config-Map/Persistence-Volume)
   - [신규 개발 조직의 추가](#신규-개발-조직의-추가)
 
 # 서비스 시나리오
@@ -199,7 +203,7 @@
 
 ## 헥사고날 아키텍처 다이어그램 도출
 
-<img width="1003" alt="스크린샷 2021-07-08 오후 12 05 15" src="https://user-images.githubusercontent.com/14067833/124856014-ca082100-dfe4-11eb-991b-af1ab61e4d1d.png">
+<img width="1009" alt="스크린샷 2021-07-09 오전 2 55 41" src="https://user-images.githubusercontent.com/14067833/124969014-2c066c00-e061-11eb-90d1-a9f31497843d.png">
 
 
     - Chris Richardson, MSA Patterns 참고하여 Inbound adaptor와 Outbound adaptor를 구분함
@@ -370,13 +374,9 @@ PolicyHandler에서 처리 시 어떤 건에 대한 처리인지를 구별하기
 
 상품 등록
 
-http POST a7514c99c03944660a2c19ac58f7d610-1304071621.ap-northeast-2.elb.amazonaws.com:8080/products quantity=10 price=1000
-
 <img width="1158" alt="스크린샷 2021-07-08 오후 2 06 43" src="https://user-images.githubusercontent.com/14067833/124869794-acdf4c80-dffc-11eb-95fd-218e7e5f1d43.png">
 
 상품 발주 (Product 수량 변경 10 -> 13)
-
-http POST a7514c99c03944660a2c19ac58f7d610-1304071621.ap-northeast-2.elb.amazonaws.com:8080/orders productId=1 quantity=3 status="order"
 
 <img width="1256" alt="스크린샷 2021-07-08 오후 3 01 35" src="https://user-images.githubusercontent.com/14067833/124872829-b5d21d00-e000-11eb-953e-66af8559c91e.png">
 
@@ -463,7 +463,24 @@ http GET http://localhost:8088/products/1
 http GET http://localhost:8088/payments/1
 ```
 
-## 동기식 호출 과 Fallback 처리
+## 폴리글랏 퍼시스턴스
+
+Alarm 서비스 특성상 규모가 크지 않고 데이터를 저장하고 빨리 가져올 수 있는 데이터 접근이 빠른 HSQL DB를 사용하기로 하였다. h2와 비슷하여 별다른 작업없이 데이터베이스 제품의 설정(pom.xml) 만으로 HSQL DB에 부착시켰다
+
+```xml
+<dependency>
+  <groupId>org.hsqldb</groupId>
+  <artifactId>hsqldb</artifactId>
+  <version>2.5.2</version>
+  <scope>runtime</scope>
+</dependency>
+```
+
+- DB 적용 후
+
+<img width="1018" alt="스크린샷 2021-07-09 오전 2 53 28" src="https://user-images.githubusercontent.com/14067833/124968857-fa8da080-e060-11eb-9be4-df166e99b3c1.png">
+
+## 동기식 호출과 Fallback 처리
 
 분석단계에서의 조건 중 하나로 발주취소(order) -> 배송취소(delivery) 간의 호출은 동기식 일관성을 유지하는 트랜잭션으로 처리하기로 하였다. 호출 프로토콜은 이미 앞서 Rest Repository 에 의해 노출되어있는 REST 서비스를 FeignClient 를 이용하여 호출하도록 한다. 
 
@@ -774,7 +791,7 @@ readinessProbe:
 
 - Delivery deployment.yml 파일 수정
 
-  ```yaml
+  ```
   # ...
   args:
   	# /tmp/healthy 파일 생성하고 30초 후 삭제
