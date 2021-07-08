@@ -376,10 +376,6 @@ http POST a7514c99c03944660a2c19ac58f7d610-1304071621.ap-northeast-2.elb.amazona
 
 http POST a7514c99c03944660a2c19ac58f7d610-1304071621.ap-northeast-2.elb.amazonaws.com:8080/orders productId=1 quantity=3 status="order"
 
-http GET http://a1d0da7dcdb994916ab907d14b95ee7b-657760462.ap-northeast-2.elb.amazonaws.com:8080/deliveries\?orderId=1
-
-http GET http://a1d0da7dcdb994916ab907d14b95ee7b-657760462.ap-northeast-2.elb.amazonaws.com:8080/products/1
-
 <img width="1256" alt="스크린샷 2021-07-08 오후 3 01 35" src="https://user-images.githubusercontent.com/14067833/124872829-b5d21d00-e000-11eb-953e-66af8559c91e.png">
 
 <img width="1120" alt="스크린샷 2021-07-08 오후 3 24 31" src="https://user-images.githubusercontent.com/14067833/124872897-c6829300-e000-11eb-897c-fc19e9130d46.png">
@@ -389,14 +385,6 @@ http GET http://a1d0da7dcdb994916ab907d14b95ee7b-657760462.ap-northeast-2.elb.am
 상품 발주 취소
 
 - 발주 취소 실행하면 관련 Order, Delivery 데이터는 Delete가 되어 없어지고 관련 Product 수량은 13 -> 10으로 줄어든 것을 볼 수 있으며 OrderStatus, ProductPage에는 이력이 남게 된다. 
-
-http DELETE http://a1d0da7dcdb994916ab907d14b95ee7b-657760462.ap-northeast-2.elb.amazonaws.com:8080/orders/1
-
-http GET http://a1d0da7dcdb994916ab907d14b95ee7b-657760462.ap-northeast-2.elb.amazonaws.com:8080/deliveries\?orderId=1
-
-http GET http://a1d0da7dcdb994916ab907d14b95ee7b-657760462.ap-northeast-2.elb.amazonaws.com:8080/products/1
-
-http GET http://a1d0da7dcdb994916ab907d14b95ee7b-657760462.ap-northeast-2.elb.amazonaws.com:8080/orderStatuses
 
 <img width="1037" alt="스크린샷 2021-07-08 오후 3 41 48" src="https://user-images.githubusercontent.com/14067833/124874941-4873bb80-e003-11eb-8637-a248c534f150.png">
 
@@ -651,9 +639,9 @@ http GET localhost:8088/products
   kubectl label namespace convenientstore istio-injection=enabled 
   ```
 
-<img width="423" alt="스크린샷 2021-07-08 오후 9 39 09" src="https://user-images.githubusercontent.com/14067833/124922982-f9467e80-e034-11eb-8842-39f127b5b191.png">
+  <img width="423" alt="스크린샷 2021-07-08 오후 9 39 09" src="https://user-images.githubusercontent.com/14067833/124922982-f9467e80-e034-11eb-8842-39f127b5b191.png">
 
-<img width="523" alt="스크린샷 2021-07-08 오후 9 45 08" src="https://user-images.githubusercontent.com/14067833/124923851-ce105f00-e035-11eb-9011-060b1fbea099.png">
+  <img width="523" alt="스크린샷 2021-07-08 오후 9 45 08" src="https://user-images.githubusercontent.com/14067833/124923851-ce105f00-e035-11eb-9011-060b1fbea099.png">
 
 - 부하테스터 siege 툴을 통한 서킷 브레이커 동작 확인:
 
