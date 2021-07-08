@@ -28,6 +28,20 @@ public class PolicyHandler{
     }
 
     @StreamListener(KafkaProcessor.INPUT)
+    public void wheneverDeliveryCanceled_ModifyStock(@Payload DeliveryCanceled deliveryCanceled){
+
+        if(!deliveryCanceled.validate()) {
+            return;
+        }
+
+        System.out.println("\n\n##### listener SubtractStock : " + deliveryCanceled.toJson() + "\n\n");
+        
+        Product product = productRepository.findById(deliveryCanceled.getProductId()).get();
+        product.subtractStock(deliveryCanceled.getQuantity());
+        productRepository.save(product);
+    }
+
+    @StreamListener(KafkaProcessor.INPUT)
     public void wheneverPayApproved_ModifyStock(@Payload PayApproved payApproved){
 
         if(!payApproved.validate()) {
@@ -54,7 +68,6 @@ public class PolicyHandler{
         product.addStock(payCanceled.getQuantity());
         productRepository.save(product);
     }
-
 
     @StreamListener(KafkaProcessor.INPUT)
     public void whatever(@Payload String eventString){}

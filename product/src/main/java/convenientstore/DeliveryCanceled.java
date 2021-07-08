@@ -1,7 +1,6 @@
-
 package convenientstore;
 
-public class DeliveryStarted extends AbstractEvent {
+public class DeliveryCanceled extends AbstractEvent {
 
     private Long id;
     private Long orderId;
@@ -13,36 +12,39 @@ public class DeliveryStarted extends AbstractEvent {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
     public Long getOrderId() {
         return orderId;
+    }
+
+    public Long getProductId() {
+        return productId;
+    }
+
+    public int getQuantity() {
+        return quantity;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public void setOrderId(Long orderId) {
         this.orderId = orderId;
     }
-    public Long getProductId() {
-        return productId;
-    }
 
     public void setProductId(Long productId) {
         this.productId = productId;
     }
-    public int getQuantity() {
-        return quantity;
-    }
 
     public void setQuantity(int quantity) {
         this.quantity = quantity;
-    }
-    public String getStatus() {
-        return status;
     }
 
     public void setStatus(String status) {
         this.status = status;
     }
 }
-
