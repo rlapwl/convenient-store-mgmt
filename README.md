@@ -171,7 +171,7 @@
 
 ### 1차 완성본에 대한 기능적/비기능적 요구사항을 커버하는지 검증
 
-
+<img width="1026" alt="41E979D4-F6E7-4DBD-956F-2C12BE2EB832" src="https://user-images.githubusercontent.com/14067833/124854479-59f89b80-dfe2-11eb-8f4b-c3be4f1aa165.png">
 
 ```
 - 편의점주가 상품을 발주 한다. (OK)
@@ -182,7 +182,7 @@
 
 ### 비기능 요구사항에 대한 검증
 
-
+<img width="1026" alt="9C707C8D-C808-47CB-B4EA-8E94ADA5325C" src="https://user-images.githubusercontent.com/14067833/124854495-5fee7c80-dfe2-11eb-98e4-b619fb5a4f87.png">
 
 ```
 - 마이크로 서비스를 넘나드는 시나리오에 대한 트랜잭션 처리
@@ -193,16 +193,16 @@
 
 ### 최종 모델링
 
-
+<img width="1026" alt="스크린샷 2021-07-05 오전 5 30 15" src="https://user-images.githubusercontent.com/14067833/124854545-74327980-dfe2-11eb-9bd0-4299e735bfc9.png">
 
 ## 헥사고날 아키텍처 다이어그램 도출
 
-![image](https://user-images.githubusercontent.com/19424600/89313080-020b3380-d6b3-11ea-9f29-c78495db4ebb.png)
+<img width="1006" alt="스크린샷 2021-07-08 오후 12 02 05" src="https://user-images.githubusercontent.com/14067833/124855723-5c5bf500-dfe4-11eb-9c4e-06e773b3ce96.png">
 
 
     - Chris Richardson, MSA Patterns 참고하여 Inbound adaptor와 Outbound adaptor를 구분함
     - 호출관계에서 PubSub 과 Req/Resp 를 구분함
-    - 서브 도메인과 바운디드 컨텍스트의 분리:  각 팀의 KPI 별로 아래와 같이 관심 구현 스토리를 나눠가짐
+    - 서브 도메인과 바운디드 컨텍스트의 분리: 각 팀의 KPI 별로 아래와 같이 관심 구현 스토리를 나눠가짐
 
 
 # 구현:
@@ -462,7 +462,7 @@ public class PolicyHandler{
 
 ## 동기식 호출 / 서킷 브레이킹 / 장애격리
 
-* 서킷 브레이킹 프레임워크의 선택: Spring FeignClient + Hystrix 옵션을 사용하여 구현함
+* 서킷 브레이킹 프레임워크의 선택: istio-injection + DestinationRule
 
 시나리오는 발주(order)-->배송(delivery) 시의 연결을 RESTful Request/Response 로 연동하여 구현이 되어있고, 결제 요청이 과도할 경우 CB 를 통하여 장애격리.
 
