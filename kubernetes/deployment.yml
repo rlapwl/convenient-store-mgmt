@@ -18,7 +18,8 @@ spec:
     spec:
       containers:
         - name: gateway
-          image: 006020783695.dkr.ecr.ap-northeast-2.amazonaws.com/gateway:latest
+          image: 879772956301.dkr.ecr.ap-northeast-2.amazonaws.com/gateway:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
 
@@ -42,7 +43,7 @@ spec:
     spec:
       containers:
         - name: order
-          image: 006020783695.dkr.ecr.ap-northeast-2.amazonaws.com/order:latest
+          image: 879772956301.dkr.ecr.ap-northeast-2.amazonaws.com/order:latest
           ports:
             - containerPort: 8080
           readinessProbe:
@@ -82,7 +83,7 @@ spec:
     spec:
       containers:
         - name: delivery
-          image: 006020783695.dkr.ecr.ap-northeast-2.amazonaws.com/delivery:latest
+          image: 879772956301.dkr.ecr.ap-northeast-2.amazonaws.com/delivery:latest
           ports:
             - containerPort: 8080
           readinessProbe:
@@ -122,7 +123,7 @@ spec:
     spec:
       containers:
         - name: product
-          image: 006020783695.dkr.ecr.ap-northeast-2.amazonaws.com/product:latest
+          image: 879772956301.dkr.ecr.ap-northeast-2.amazonaws.com/product:latest
           ports:
             - containerPort: 8080
           readinessProbe:
@@ -162,7 +163,7 @@ spec:
     spec:
       containers:
         - name: payment
-          image: 006020783695.dkr.ecr.ap-northeast-2.amazonaws.com/payment:latest
+          image: 879772956301.dkr.ecr.ap-northeast-2.amazonaws.com/payment:latest
           ports:
             - containerPort: 8080
           readinessProbe:
@@ -202,7 +203,7 @@ spec:
     spec:
       containers:
         - name: alarm
-          image: 006020783695.dkr.ecr.ap-northeast-2.amazonaws.com/alarm:latest
+          image: 879772956301.dkr.ecr.ap-northeast-2.amazonaws.com/alarm:latest
           ports:
             - containerPort: 8080
           readinessProbe:
@@ -236,7 +237,7 @@ spec:
       targetPort: 8080
   selector:
     app: gateway
-  type: ClusterIP
+  type: LoadBalancer
 
 ---
 
