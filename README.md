@@ -2,6 +2,8 @@
 
 # 편의점 관리 시스템
 
+- 체크포인트 : https://workflowy.com/s/assessment-check-po/T5YrzcMewfo4J6LW
+
 # Table of contents
 
 - [편의점 관리](#---)
@@ -119,7 +121,7 @@
 
 ## Event Storming 결과
 
-* MSAEz 로 모델링한 이벤트스토밍 결과:  http://msaez.io/#/storming/e9LJG8q1WXc9bg367c14BBHjiMW2/every/e042a9db3688e173aa4e7f266564151f/-MDslrtvSz9qJIM4UShJ
+* MSAEz 로 모델링한 이벤트스토밍 결과:  http://www.msaez.io/#/storming/XFbKQ9OFTqbG9VE3F1C0D7HV6zH3/mine/afbe18ec37f0d54b1b8b8cfab2cde068
 
 ### 이벤트 도출
 
@@ -739,10 +741,6 @@ siege -c5 -t120S -v --content-type "application/json" 'http://delivery:8080/deli
 
 ```
 kubectl set image ...
-
-docker build -t 879772956301.dkr.ecr.ap-northeast-2.amazonaws.com/user02-delivery:v2 .
-docker push 879772956301.dkr.ecr.ap-northeast-2.amazonaws.com/user02-delivery:v2
-kubectl set image deploy delivery delivery=879772956301.dkr.ecr.ap-northeast-2.amazonaws.com/user02-delivery:v2
 ```
 
 - seige 의 화면으로 넘어가서 Availability 가 100% 미만으로 떨어졌는지 확인
@@ -755,15 +753,15 @@ kubectl set image deploy delivery delivery=879772956301.dkr.ecr.ap-northeast-2.a
 
 ```yaml
 # deployment.yml의 readiness probe 설정
-...
-					readinessProbe:
-            httpGet:
-              path: '/actuator/health'
-              port: 8080
-            initialDelaySeconds: 10
-            timeoutSeconds: 2
-            periodSeconds: 5
-            failureThreshold: 10
+# ...
+readinessProbe:
+  httpGet:
+		path: '/actuator/health'
+		port: 8080
+	initialDelaySeconds: 10
+	timeoutSeconds: 2
+	periodSeconds: 5
+	failureThreshold: 10
 ```
 
 - 동일한 시나리오로 재배포 한 후 Availability 확인:
@@ -774,7 +772,37 @@ kubectl set image deploy delivery delivery=879772956301.dkr.ecr.ap-northeast-2.a
 
 ## Self-healing(Liveness Probe)
 
+- Delivery deployment.yml 파일 수정
 
+  ```yaml
+  # ...
+  args:
+  	# /tmp/healthy 파일 생성하고 30초 후 삭제
+  	- /bin/sh
+  	- -c
+  	- touch /tmp/healthy; sleep 30; rm -rf /tmp/healthy; sleep 600
+  livenessProbe:
+  	exec:
+  		command:
+  			- cat
+  			- /tmp/healthy
+  	initialDelaySeconds: 120
+  	timeoutSeconds: 2
+  	periodSeconds: 5
+  	failureThreshold: 5
+  ```
+
+- Delivery 기동후 확인
+
+  ``` shell
+  kubectl describe pod delivery -n convenientstore
+  ```
+
+kubelet이 5 초마다 livenessProbe를 수행해야 한다고 지정했다(periodSeconds). 하지만 수행하기 전에 120초정도 기다리고(initialDelaySeconds) 수행한다(`cat /tmp/healthy` 명령어 수행). 명령이 성공하면 0을 반환하고 kubelet은 컨테이너가 살아 있고 정상인 것으로 간주합니다. 명령이 0이 아닌 값을 반환하면 kubelet은 컨테이너를 종료하고 다시 시작합니다.
+
+<img width="1117" alt="스크린샷 2021-07-09 오전 1 28 13" src="https://user-images.githubusercontent.com/14067833/124960071-e2188880-e056-11eb-94e1-ef8fcf524a41.png">
+
+<img width="551" alt="스크린샷 2021-07-09 오전 1 28 34" src="https://user-images.githubusercontent.com/14067833/124960112-f2306800-e056-11eb-9b8a-47fce723027a.png">
 
 ## Config Map/Persistence Volume
 
