@@ -193,7 +193,7 @@
 
 ### 최종 모델링
 
-<img width="1026" alt="스크린샷 2021-07-05 오전 5 30 15" src="https://user-images.githubusercontent.com/14067833/124854545-74327980-dfe2-11eb-9bd0-4299e735bfc9.png">
+<img width="1023" alt="스크린샷 2021-07-08 오후 4 17 17" src="https://user-images.githubusercontent.com/14067833/124879242-fd0fdc00-e007-11eb-8e98-ee63b79a7ed2.png">
 
 ## 헥사고날 아키텍처 다이어그램 도출
 
@@ -213,25 +213,202 @@
 cd gateway
 mvn spring-boot:run
 
-cd order
+cd ../order
 mvn spring-boot:run
 
-cd delivery
+cd ../delivery
 mvn spring-boot:run 
 
-cd product
+cd ../product
 mvn spring-boot:run  
 
-cd payment
+cd ../payment
 mvn spring-boot:run  
 
-cd alarm
+cd ../alarm
 mvn spring-boot:run
 ```
 
+## CQRS
+
+발주(Order) 상세 내역, 상품(Product) 재고 현황 등 Status에 대하여 편의점주가 조회 할 수 있도록 CQRS 로 구현하였다.
+
+- OrderStatus
+
+  ```java
+  @Entity
+  @Table(name="OrderStatus_table")
+  public class OrderStatus {
+  
+      @Id
+      @GeneratedValue(strategy=GenerationType.IDENTITY)
+      private Long id;
+      private Long productId;
+      private String status;
+      private int quantity;
+  }
+  ```
+
+- ProductPage
+
+  ```java
+  @Entity
+  @Table(name="ProductPage_table")
+  public class ProductPage {
+  
+      @Id
+      @GeneratedValue(strategy=GenerationType.IDENTITY)
+      private Long id;
+      private int quantity;
+      private int price;
+      private String status;
+  }
+  ```
+
+- ProductPageViewHandler 를 통해 구현
+
+  - "StockModified" 이벤트 발생 시, Pub/Sub 기반으로 별도 ProductPage_table 테이블에 저장
+
+  ```java
+  @Service
+  public class ProductPageViewHandler {
+  
+      @StreamListener(KafkaProcessor.INPUT)
+      public void whenStockModified_then_UPDATE(@Payload StockModified stockModified) {
+        ...
+          if (productPageOptional.isPresent()) {
+          	ProductPage productPage = productPageOptional.get();
+                      
+            // view 객체에 이벤트의 eventDirectValue 를 set 함
+            productPage.setQuantity(stockModified.getQuantity());
+            productPage.setStatus(stockModified.getStatus());
+  
+            // view 레파지토리에 save
+            productPageRepository.save(productPage);
+  
+          } else {
+            // view 레파지토리에 save
+            productPageRepository.save(new ProductPage(stockModified.getQuantity(), stockModified.getPrice(), stockModified.getStatus()));
+          }
+        
+        ...
+      }
+  }
+  ```
+
+- OrderStatusViewHandler 를 통해 구현(ProductPageViewHandler 구현 형태 비슷함)
+
+  - "DeliveryStarted", "DeliveryCanceled" 이벤트 발생 시, Pub/Sub 기반으로 별도 OrderStatus_table 테이블에 저장
+
+- View 페이지 조회 결과
+
+  <img width="1029" alt="스크린샷 2021-07-08 오후 3 28 07" src="https://user-images.githubusercontent.com/14067833/124873201-1eb99500-e001-11eb-986e-6484f8c81235.png">
+
+## API 게이트웨이
+
+gateway App을 추가 후 application.yaml에 각 마이크로 서비스의 routes를 추가, 서버의 포트를 8080 으로 설정함
+
+```yaml
+spring:
+  profiles: docker
+  cloud:
+    gateway:
+      routes:
+        - id: order
+          uri: http://order:8080
+          predicates:
+            - Path=/orders/**, /orderStatuses/**
+        - id: delivery
+          uri: http://delivery:8080
+          predicates:
+            - Path=/deliveries/** 
+        - id: product
+          uri: http://product:8080
+          predicates:
+            - Path=/products/**, /productPages/**
+        - id: payment
+          uri: http://payment:8080
+          predicates:
+            - Path=/payments/** 
+        - id: alarm
+          uri: http://alarm:8080
+          predicates:
+            - Path=/messages/** 
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins:
+              - "*"
+            allowedMethods:
+              - "*"
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+
+server:
+  port: 8080
+```
+
+```shell
+ kubectl apply -f deployment.yml
+ kubectl apply -f service.yaml
+```
+
+- 배포후
+
+  <img width="1093" alt="스크린샷 2021-07-08 오후 2 47 46" src="https://user-images.githubusercontent.com/14067833/124868969-853bb480-dffb-11eb-8e6a-89a1f5fbe58b.png">
+
+# Correlation
+
+PolicyHandler에서 처리 시 어떤 건에 대한 처리인지를 구별하기 위한 Correlation-key 구현을 
+이벤트 클래스 안의 변수로 전달받아 처리하도록 구현하였다. 
+
+- 상품(Order) 발주 시 배송(Delivery), 상품(Product) 등의 상태가 변경되는 걸 확인할 수 있다.
+- 상품(Order) 발주 취소를 수행하면 다시 연관된 배송(Delivery), 상품(Product) 등의 상태가 변경되는 걸 확인할 수 있다.
+
+상품 등록
+
+http POST a7514c99c03944660a2c19ac58f7d610-1304071621.ap-northeast-2.elb.amazonaws.com:8080/products quantity=10 price=1000
+
+<img width="1158" alt="스크린샷 2021-07-08 오후 2 06 43" src="https://user-images.githubusercontent.com/14067833/124869794-acdf4c80-dffc-11eb-95fd-218e7e5f1d43.png">
+
+상품 발주 (Product 수량 변경 10 -> 13)
+
+http POST a7514c99c03944660a2c19ac58f7d610-1304071621.ap-northeast-2.elb.amazonaws.com:8080/orders productId=1 quantity=3 status="order"
+
+http GET http://a1d0da7dcdb994916ab907d14b95ee7b-657760462.ap-northeast-2.elb.amazonaws.com:8080/deliveries\?orderId=1
+
+http GET http://a1d0da7dcdb994916ab907d14b95ee7b-657760462.ap-northeast-2.elb.amazonaws.com:8080/products/1
+
+<img width="1256" alt="스크린샷 2021-07-08 오후 3 01 35" src="https://user-images.githubusercontent.com/14067833/124872829-b5d21d00-e000-11eb-953e-66af8559c91e.png">
+
+<img width="1120" alt="스크린샷 2021-07-08 오후 3 24 31" src="https://user-images.githubusercontent.com/14067833/124872897-c6829300-e000-11eb-897c-fc19e9130d46.png">
+
+<img width="1009" alt="스크린샷 2021-07-08 오후 3 26 34" src="https://user-images.githubusercontent.com/14067833/124873041-eca83300-e000-11eb-9e69-43c319c63376.png">
+
+상품 발주 취소
+
+- 발주 취소 실행하면 관련 Order, Delivery 데이터는 Delete가 되어 없어지고 관련 Product 수량은 13 -> 10으로 줄어든 것을 볼 수 있으며 OrderStatus, ProductPage에는 이력이 남게 된다. 
+
+http DELETE http://a1d0da7dcdb994916ab907d14b95ee7b-657760462.ap-northeast-2.elb.amazonaws.com:8080/orders/1
+
+http GET http://a1d0da7dcdb994916ab907d14b95ee7b-657760462.ap-northeast-2.elb.amazonaws.com:8080/deliveries\?orderId=1
+
+http GET http://a1d0da7dcdb994916ab907d14b95ee7b-657760462.ap-northeast-2.elb.amazonaws.com:8080/products/1
+
+http GET http://a1d0da7dcdb994916ab907d14b95ee7b-657760462.ap-northeast-2.elb.amazonaws.com:8080/orderStatuses
+
+<img width="1037" alt="스크린샷 2021-07-08 오후 3 41 48" src="https://user-images.githubusercontent.com/14067833/124874941-4873bb80-e003-11eb-8637-a248c534f150.png">
+
+<img width="1094" alt="스크린샷 2021-07-08 오후 3 42 22" src="https://user-images.githubusercontent.com/14067833/124874997-5c1f2200-e003-11eb-9b2d-13696db80cdc.png">
+
+<img width="1015" alt="스크린샷 2021-07-08 오후 3 42 34" src="https://user-images.githubusercontent.com/14067833/124875047-693c1100-e003-11eb-9c9f-158f87147b94.png">
+
+<img width="1038" alt="스크린샷 2021-07-08 오후 3 43 21" src="https://user-images.githubusercontent.com/14067833/124875081-735e0f80-e003-11eb-9fe0-65b3b8906051.png">
+
 ## DDD 의 적용
 
-- 각 서비스내에 도출된 핵심 Aggregate Root 객체를 Entity 로 선언하였다: (예시는 Payment 마이크로 서비스). 이때 가능한 현업에서 사용하는 언어 (유비쿼터스 랭귀지)를 그대로 사용하려고 노력했다. 하지만, 일부 구현에 있어서 영문이 아닌 경우는 실행이 불가능한 경우가 있기 때문에 계속 사용할 방법은 아닌것 같다. (Maven pom.xml, Kafka의 topic id, FeignClient 의 서비스 id 등은 한글로 식별자를 사용하는 경우 오류가 발생하는 것을 확인하였다)
+각 서비스내에 도출된 핵심 Aggregate Root 객체를 Entity 로 선언하였다: (예시는 Payment 마이크로 서비스). 이때 가능한 현업에서 사용하는 언어 (유비쿼터스 랭귀지)를 그대로 사용하려고 노력했다. 하지만, 일부 구현에 있어서 영문이 아닌 경우는 실행이 불가능한 경우가 있기 때문에 계속 사용할 방법은 아닌것 같다. (Maven pom.xml, Kafka의 topic id, FeignClient 의 서비스 id 등은 한글로 식별자를 사용하는 경우 오류가 발생하는 것을 확인하였다)
 
 ```java
 @Entity
@@ -283,98 +460,72 @@ public interface PaymentRepository extends PagingAndSortingRepository<Payment, L
 }
 ```
 
-#### 적용 후 REST API 의 테스트
+- 적용 후 REST API 의 테스트
 
-- 상품 등록
+```shell
+# 상품 구매
+http POST http://localhost:8088/payments productId=1 quantity=2 price=2000 
 
+# 상품 재고 확인
+http GET http://localhost:8088/products/1
 
-
-- 상품 발주
-  ![image](https://user-images.githubusercontent.com/19424600/89304692-b5225f80-d6a8-11ea-802b-926b77f2e737.png)
-  ![image](https://user-images.githubusercontent.com/19424600/89304762-cb302000-d6a8-11ea-9ac9-6bee1b295652.png)
-  ![image](https://user-images.githubusercontent.com/19424600/89304808-dc792c80-d6a8-11ea-8547-c8ec4ceae8bc.png)
-  ![image](https://user-images.githubusercontent.com/19424600/89304886-f450b080-d6a8-11ea-8c10-5798d8eb0adb.png)
-  ![image](https://user-images.githubusercontent.com/19424600/89304974-07638080-d6a9-11ea-9288-9cb3cceb8069.png)
-  ![image](https://user-images.githubusercontent.com/19424600/89305031-1cd8aa80-d6a9-11ea-92c4-b00759e51e1a.png)
-
-
-- 상품 발주 취소
-  ![image](https://user-images.githubusercontent.com/19424600/89305107-2feb7a80-d6a9-11ea-8e12-6178605d3b04.png)
-  ![image](https://user-images.githubusercontent.com/19424600/89305243-62957300-d6a9-11ea-97e1-a30d9b8f2f6c.png)
-  ![image](https://user-images.githubusercontent.com/19424600/89305303-72ad5280-d6a9-11ea-93b0-79aa95b78ebb.png)
-  ![image](https://user-images.githubusercontent.com/19424600/89305358-81940500-d6a9-11ea-9f60-52e290658565.png)
-
-
-- 상품 구매
-  ![image](https://user-images.githubusercontent.com/19424600/89305411-91134e00-d6a9-11ea-844b-8034f6f11eab.png)
-  ![image](https://user-images.githubusercontent.com/19424600/89305531-b6a05780-d6a9-11ea-8261-2ae42cf1bc04.png)
-  ![image](https://user-images.githubusercontent.com/19424600/89305569-c5870a00-d6a9-11ea-90f5-2efc5298f994.png)
-
-- 상품 구매 취소
-  ![image](https://user-images.githubusercontent.com/19424600/89305637-dcc5f780-d6a9-11ea-9c70-627f41bfacf9.png)
-  ![image](https://user-images.githubusercontent.com/19424600/89305669-e8b1b980-d6a9-11ea-8505-faebf06f5969.png)
-  ![image](https://user-images.githubusercontent.com/19424600/89305716-f6ffd580-d6a9-11ea-8950-7a18a025ecd5.png)
-
-
+# 상품 구매 내역 확인
+http GET http://localhost:8088/payments/1
+```
 
 ## 동기식 호출 과 Fallback 처리
 
-분석단계에서의 조건 중 하나로 발주취소(order)->배송취소(delivery) 간의 호출은 동기식 일관성을 유지하는 트랜잭션으로 처리하기로 하였다. 호출 프로토콜은 이미 앞서 Rest Repository 에 의해 노출되어있는 REST 서비스를 FeignClient 를 이용하여 호출하도록 한다. 
+분석단계에서의 조건 중 하나로 발주취소(order) -> 배송취소(delivery) 간의 호출은 동기식 일관성을 유지하는 트랜잭션으로 처리하기로 하였다. 호출 프로토콜은 이미 앞서 Rest Repository 에 의해 노출되어있는 REST 서비스를 FeignClient 를 이용하여 호출하도록 한다. 
 
 - 배송서비스를 호출하기 위하여 Stub과 (FeignClient) 를 이용하여 Service 대행 인터페이스 (Proxy) 를 구현
 
-```
-# (order) DeliveryService.java
+  ```java
+  @FeignClient(name = "delivery", url = "${api.url.delivery}")
+  @RequestMapping("/deliveries")
+  public interface DeliveryService {
+  
+      @DeleteMapping(path = "/{deliveryId}")
+      public void cancelDelivery(@PathVariable Long deliveryId);
+  
+  }
+  ```
 
-@FeignClient(name="Delivery", url="${api.url.delivery}")
-public interface DeliveryService {
+- 발주취소 처리시(@PreRemove) 배송취소를 요청하도록 처리
 
-    @RequestMapping(method = RequestMethod.POST, path="/cancellations")
-    void cancelDelivery(@RequestBody Delivery delivery);
-
-}
-```
-
-- 발주취소 처리시(@PreUpdate) 배송취소를 요청하도록 처리
-
-```
-# Order.java (Entity)
-
-    @PreUpdate
-    public void onPreUpdate(){
-        if("CANCELLED".equals(this.orderStatus)){
-...
-            PEJ.external.Delivery delivery = new PEJ.external.Delivery();
-            delivery.setOrderId(orderCanceled.getOrderId());
-            delivery.setDeliveryStatus("CANCELLED");
-
-            OrderApplication.applicationContext.getBean(PEJ.external.DeliveryService.class)
-                    .cancelDelivery(delivery);
-        }
-    }
-```
+  ```java
+  @Entity
+  @Table(name = "Order_table")
+  public class Order {
+  
+      @PreRemove
+      public void onPreRemove() {
+          Delivery delivery = OrderApplication.applicationContext.getBean(convenientstore.external.DeliveryService.class)
+                      .findDelivery(getId());
+  
+          OrderApplication.applicationContext.getBean(convenientstore.external.DeliveryService.class)
+                  .cancelDelivery(delivery.getId());
+  
+          OrderCanceled orderCanceled = new OrderCanceled(id, productId, quantity, "cancel");
+          orderCanceled.publishAfterCommit();
+      }
+  }
+  ```
 
 - 동기식 호출에서는 호출 시간에 따른 타임 커플링이 발생하며, 배송 시스템이 장애가 나면 주문도 못받는다는 것을 확인:
 
-
-
-# 배송 (delivery) 서비스를 잠시 내려놓음
-
-#발주취소처리
-http PATCH http://localhost:8088/orders/1 orderStatus="CANCELLED" #Fail
-  ![image](https://user-images.githubusercontent.com/19424600/89369385-e9cdff80-d718-11ea-9d12-cd0013969658.png)
-
-#배송서비스 재기동
-cd delivery
-mvn spring-boot:run
-
-#주문처리
-http PATCH http://localhost:8088/orders/1 orderStatus="CANCELLED" #Success
-  ![image](https://user-images.githubusercontent.com/19424600/89369593-8e504180-d719-11ea-90c9-bd87b089c6de.png)
+  ```shell
+  # 배송(Delivery)서비스를 잠시 내려놓음
+  
+  # 발주 취소
+  http DELETE http://localhost:8088/orders/3	# Fail
+  
+  # 배송서비스 재기동
+  
+  # 발주 취소
+  http DELETE http://localhost:8088/orders/3  #Success
+  ```
 
 - 또한 과도한 요청시에 서비스 장애가 도미노 처럼 벌어질 수 있다. (서킷브레이커, 폴백 처리는 운영단계에서 설명한다.)
-
-
 
 
 ## 비동기식 호출 / 시간적 디커플링 / 장애격리 / 최종 (Eventual) 일관성 테스트
@@ -440,15 +591,23 @@ public class PolicyHandler{
 }
 ```
 
-배송시스템은 상품시스템과 완전히 분리되어있으며, 이벤트 수신에 따라 처리되기 때문에, 상품시스템이 유지보수로 인해 잠시 내려간 상태라도 배송처리를 하는데 문제가 없다:
+배송시스템은 상품시스템과 완전히 분리되어있으며, 이벤트 수신에 따라 처리되기 때문에, 상품시스템이 유지보수로 인해 잠시 내려간 상태라도 배송처리를 하는데 문제가 없다.
 
-- 상품시스템을 중단후 발주처리시 배송이벤트 발생되지만 처리되지 않다가 
-  상품시스템 구동 후 배송이벤트를 수신하여 상품입고 처리가 정상완료 됨을 확인
-  ![image](https://user-images.githubusercontent.com/19424600/89307687-552db800-d6ac-11ea-9d6f-4a08aa73a783.png)
-  ![image](https://user-images.githubusercontent.com/19424600/89307753-68d91e80-d6ac-11ea-93b8-3f5245083935.png)
-  ![image](https://user-images.githubusercontent.com/19424600/89307806-79899480-d6ac-11ea-8d61-363cb625f0e0.png)
+```shell
+# 상품(Product)서비스를 잠시 내려놓음
 
+# 발주 요청
+http POST http://localhost:8088/orders productId=1 quantity=3 status="order"
 
+# 배송 상태 확인
+http GET http://localhost:8088/deliveries?orderId=1		#Success
+
+# 상품(Product)서비스 재기동
+
+# 상품 상태 확인
+# 상품시스템 재기동 후 배송 이벤트를 수신하여 상품 입고 처리가 정상완료됨을 확인
+http GET localhost:8088/products
+```
 
 # 운영
 
@@ -460,54 +619,123 @@ public class PolicyHandler{
 
 <img width="1036" alt="스크린샷 2021-07-07 오전 12 29 57" src="https://user-images.githubusercontent.com/14067833/124627470-8c0ede00-deba-11eb-9e1c-49c0cf786d3b.png">
 
+<img width="1048" alt="스크린샷 2021-07-08 오후 12 49 36" src="https://user-images.githubusercontent.com/14067833/124859501-076fad00-dfeb-11eb-9c83-7da7af2330ff.png">
+
 ## 동기식 호출 / 서킷 브레이킹 / 장애격리
 
 * 서킷 브레이킹 프레임워크의 선택: istio-injection + DestinationRule
 
-시나리오는 발주(order)-->배송(delivery) 시의 연결을 RESTful Request/Response 로 연동하여 구현이 되어있고, 결제 요청이 과도할 경우 CB 를 통하여 장애격리.
+- 시나리오는 발주(order)-->배송(delivery) 시의 연결을 RESTful Request/Response 로 연동하여 구현이 되어있고, 발주 요청이 과도할 경우 CB 를 통하여 장애격리.
 
-- Hystrix 를 설정:  요청처리 쓰레드에서 처리시간이 610 밀리가 넘어서기 시작하여 어느정도 유지되면 CB 회로가 닫히도록 (요청을 빠르게 실패처리, 차단) 설정
+- DestinationRule 를 생성하여 circuit break 가 발생할 수 있도록 설정 최소 connection pool 설정
 
-```
-# application.ymlhystrix:  command:    # 전역설정    default:      execution.isolation.thread.timeoutInMilliseconds: 610
-```
+  ```yaml
+  apiVersion: networking.istio.io/v1alpha3
+  kind: DestinationRule
+  metadata:
+    name: dr-delivery
+    namespace: convenientstore
+  spec:
+    host: delivery
+    trafficPolicy:
+      connectionPool:
+        http:
+          http1MaxPendingRequests: 1
+          maxRequestsPerConnection: 1
+  ```
 
-- 피호출 서비스(결제:pay) 의 임의 부하 처리 - 400 밀리에서 증감 220 밀리 정도 왔다갔다 하게
+- istio-injection 활성화 및 delivery pod container 확인
 
-```
-# (delivery) Delivery.java (Entity)    @PreUpdate    public void onPreUpdate(){        if("CANCELLED".equals(this.deliveryStatus)){            DeliveryCancelled deliveryCancelled = new DeliveryCancelled();            BeanUtils.copyProperties(this, deliveryCancelled);            deliveryCancelled.publishAfterCommit();            try {                Thread.currentThread().sleep((long) (400 + Math.random() * 220));            } catch (InterruptedException e) {                e.printStackTrace();            }        }    }
-```
+  ```shell
+  kubectl get ns -L istio-injection
+  kubectl label namespace convenientstore istio-injection=enabled 
+  ```
 
-* 부하테스터 siege 툴을 통한 서킷 브레이커 동작 확인:
+<img width="423" alt="스크린샷 2021-07-08 오후 9 39 09" src="https://user-images.githubusercontent.com/14067833/124922982-f9467e80-e034-11eb-8842-39f127b5b191.png">
 
-- 동시사용자 100명
-- 60초 동안 실시
-  ![image](https://user-images.githubusercontent.com/19424600/89369124-29481c00-d718-11ea-90c9-ce6c2569e35b.PNG)
-  ![image](https://user-images.githubusercontent.com/19424600/89369123-2816ef00-d718-11ea-9464-7d4f121d9f83.PNG)
+<img width="523" alt="스크린샷 2021-07-08 오후 9 45 08" src="https://user-images.githubusercontent.com/14067833/124923851-ce105f00-e035-11eb-9011-060b1fbea099.png">
 
+- 부하테스터 siege 툴을 통한 서킷 브레이커 동작 확인:
 
-siege 실행 결과  : Availability 96% 확인
+  - siege 실행
 
+  ```shell
+  kubectl run siege --image=apexacme/siege-nginx -n convenientstore
+  kubectl exec -it siege -c siege -n convenientstore -- /bin/bash
+  ```
 
+  - 동시사용자 1로 부하 생성 시 모두 정상
 
+  ```shell
+  siege -c1 -t10S -v --content-type "application/json" 'http://delivery:8080/deliveries POST {"orderId": 1, "productId": 1, "quantity": 3, "status": "delivery"}'
+  ```
+
+  <img width="1214" alt="스크린샷 2021-07-08 오후 9 58 06" src="https://user-images.githubusercontent.com/14067833/124925616-999da280-e037-11eb-8b7a-b2c78c8c2121.png">
+
+  - 동시사용자 10로 부하 생성 시 503 에러 78개 발생
+
+  ```shell
+  siege -c10 -t10S -v --content-type "application/json" 'http://delivery:8080/deliveries POST {"orderId": 1, "productId": 1, "quantity": 3, "status": "delivery"}'
+  ```
+
+  <img width="1224" alt="스크린샷 2021-07-08 오후 10 04 56" src="https://user-images.githubusercontent.com/14067833/124926567-a2db3f00-e038-11eb-9da7-50cb5d04fece.png">
+
+  <img width="577" alt="스크린샷 2021-07-08 오후 10 05 11" src="https://user-images.githubusercontent.com/14067833/124926612-b090c480-e038-11eb-8e79-d1c70fe0673a.png">
+
+  - 다시 최소 Connection pool로 부하 다시 정상 확인
+
+  <img width="837" alt="스크린샷 2021-07-08 오후 10 20 10" src="https://user-images.githubusercontent.com/14067833/124928638-bbe4ef80-e03a-11eb-8547-190e0bf40412.png">
+
+- 운영시스템은 죽지 않고 지속적으로 CB 에 의하여 적절히 회로가 열림과 닫힘이 벌어지면서 자원을 보호하고 있음을 보여줌. 하지만, 75.24% 가 성공하였고, 25%가 실패했다는 것은 고객 사용성에 있어 좋지 않기 때문에 Retry 설정과 동적 Scale out (replica의 자동적 추가,HPA) 을 통하여 시스템을 확장 해주는 후속처리가 필요.
+- Retry 의 설정 (istio)
+- Availability 가 높아진 것을 확인 (siege)
 
 ### 오토스케일 아웃
 
-- 배송 서비스에 대한 replica 를 동적으로 늘려주도록 HPA 를 설정한다. 설정은 CPU 사용량이 15프로를 넘어서면 replica 를 10개까지 늘려준다:
-  ![image](https://user-images.githubusercontent.com/19424600/89306585-07648000-d6ab-11ea-8f37-2585134c153c.png)
+앞서 CB 는 시스템을 안정되게 운영할 수 있게 해줬지만 사용자의 요청을 100% 받아들여주지 못했기 때문에 이에 대한 보완책으로 자동화된 확장 기능을 적용하고자 한다.
 
-- CB 에서 했던 방식대로 워크로드를 50초 동안 걸어준다.
-  ![image](https://user-images.githubusercontent.com/19424600/89314832-1bad7a80-d6b5-11ea-90da-8cb242d6c710.png)
+- (istio injection 적용한 경우) istio injection 적용 해제
+
+  ```shell
+  kubectl label namespace convenientstore istio-injection=disabled --overwrite
+  ```
+
+- Delivery deployment.yml 파일에 resources 설정을 추가한다
+
+  <img width="695" alt="스크린샷 2021-07-08 오후 11 07 05" src="https://user-images.githubusercontent.com/14067833/124936706-bb9c2280-e041-11eb-867b-944c52f4b911.png">
+
+- 배송 서비스에 대한 replica 를 동적으로 늘려주도록 HPA 를 설정한다. 설정은 CPU 사용량이 15프로를 넘어서면 replica 를 10개까지 늘려준다.
+
+  ```shell
+  kubectl autoscale deploy delivery -n convenientstore --min=1 --max=10 --cpu-percent=15
+  ```
+
+​		<img width="866" alt="스크린샷 2021-07-08 오후 11 21 32" src="https://user-images.githubusercontent.com/14067833/124938476-4a5d6f00-e043-11eb-9624-be9114b74e5d.png">
+
+- CB 에서 했던 방식대로 동시사용자 50명, 워크로드를 1분 동안 걸어준다.
+
+  ```shell
+  siege -c50 -t60S -v --content-type "application/json" 'http://delivery:8080/deliveries POST {"orderId": 1, "productId": 1, "quantity": 3, "status": "delivery"}'
+  ```
+
+- 오토스케일이 어떻게 되고 있는지 모니터링을 걸어둔다.
+
+  ```shell
+  kubectl get deploy delivery -w -n convenientstore
+  ```
+
+- 어느정도 시간이 흐른 후 (약 30초) 스케일 아웃이 벌어지는 것을 확인할 수 있다.
+
+  <img width="595" alt="스크린샷 2021-07-08 오후 11 30 17" src="https://user-images.githubusercontent.com/14067833/124940623-1be09380-e045-11eb-9ca8-fca9976dba56.png">
+
+  <img width="593" alt="스크린샷 2021-07-08 오후 11 33 58" src="https://user-images.githubusercontent.com/14067833/124940942-5d713e80-e045-11eb-8d22-1167fa0915ea.png">
+
+- siege 의 로그를 보아도 전체적인 성공률이 높아진 것을 확인 할 수 있다.
+
+  <img width="684" alt="스크린샷 2021-07-08 오후 11 42 22" src="https://user-images.githubusercontent.com/14067833/124941978-2e0f0180-e046-11eb-8fd0-7ad310212374.png">
 
 
-- 오토스케일 발생하지 않음(siege 실행 결과 오류 없이 수행됨 : Availability 100%)
-
-서비스에 복잡한 비즈니스 로직이 포함된 것이 아니어서, 
-
-CPU 부하를 주지 못한 것으로 추정된다.
-
-
-## 무정지 재배포
+## 무정지 재배포(Readiness Probe)
 
 * 먼저 무정지 재배포가 100% 되는 것인지 확인하기 위해서 Autoscaler 이나 CB 설정을 제거함
 
@@ -522,3 +750,42 @@ CPU 부하를 주지 못한 것으로 추정된다.
 
 배포기간 동안 Availability 가 변화없기 때문에 무정지 재배포가 성공한 것으로 확인됨.
 
+## Self-healing(Liveness Probe)
+
+
+
+## Config Map/Persistence Volume
+
+1. configmap.yaml 파일 생성
+
+   ```yaml
+   apiVersion: v1
+   kind: ConfigMap
+   metadata:
+     name: convenientstore-config
+   data:
+     api.url.delivery: http://delivery:8080
+   ```
+
+2. deployment.yml에 적용
+
+   ```yaml
+   # ...
+             env:
+               - name: api.url.delivery	# configmap.yaml에 있는 key-value
+                 valueFrom:
+                   configMapKeyRef:
+                     name: convenientstore-config
+                     key: api.url.delivery
+   ```
+
+3. 적용 소스
+
+   ```java
+   @FeignClient(name = "delivery", url = "${api.url.delivery}")
+   @RequestMapping("/deliveries")
+   public interface DeliveryService {
+   }
+   ```
+
+   
