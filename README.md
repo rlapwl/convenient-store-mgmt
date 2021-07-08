@@ -727,14 +727,48 @@ http GET localhost:8088/products
 
 * 먼저 무정지 재배포가 100% 되는 것인지 확인하기 위해서 Autoscaler 이나 CB 설정을 제거함
 
-- 러닝중 이미지 적용
-  ![image](https://user-images.githubusercontent.com/19424600/89368557-cace6e00-d716-11ea-88e2-7394df9e1fb2.png)
+#### Readness probe 미설정 상태
 
-  ![image](https://user-images.githubusercontent.com/19424600/89367812-f3edff00-d714-11ea-9607-2d08c1c351f0.png)
-  배포기간중 Availability 가 평소 100%에서 99% 대로 떨어지는 것을 확인. 원인은 쿠버네티스가 성급하게 새로 올려진 서비스를 READY 상태로 인식하여 서비스 유입을 진행한 것이기 때문. 이를 막기위해 Readiness Probe 를 설정함:
+- seige 로 배포작업 직전에 워크로드를 모니터링 함.
+
+```shell
+siege -c5 -t120S -v --content-type "application/json" 'http://delivery:8080/deliveries POST {"orderId": 1, "productId": 1, "quantity": 3, "status": "delivery"}'
+```
+
+- 새버전으로의 배포 시작
+
+```
+kubectl set image ...
+
+docker build -t 879772956301.dkr.ecr.ap-northeast-2.amazonaws.com/user02-delivery:v2 .
+docker push 879772956301.dkr.ecr.ap-northeast-2.amazonaws.com/user02-delivery:v2
+kubectl set image deploy delivery delivery=879772956301.dkr.ecr.ap-northeast-2.amazonaws.com/user02-delivery:v2
+```
+
+- seige 의 화면으로 넘어가서 Availability 가 100% 미만으로 떨어졌는지 확인
+
+  <img width="413" alt="스크린샷 2021-07-09 오전 12 13 51" src="https://user-images.githubusercontent.com/14067833/124947521-dc1caa80-e04a-11eb-9c83-64a7f22f4d86.png">
+
+배포기간중 Availability 가 평소 100%에서 90% 대로 떨어지는 것을 확인. 원인은 쿠버네티스가 성급하게 새로 올려진 서비스를 READY 상태로 인식하여 서비스 유입을 진행한 것이기 때문. 이를 막기위해 Readiness Probe 를 설정함:
+
+#### Readness probe 설정 상태
+
+```yaml
+# deployment.yml의 readiness probe 설정
+...
+					readinessProbe:
+            httpGet:
+              path: '/actuator/health'
+              port: 8080
+            initialDelaySeconds: 10
+            timeoutSeconds: 2
+            periodSeconds: 5
+            failureThreshold: 10
+```
 
 - 동일한 시나리오로 재배포 한 후 Availability 확인:
-  ![image](https://user-images.githubusercontent.com/19424600/89368185-d705fb80-d715-11ea-84e5-2079f6851a1d.png)
+
+  <img width="462" alt="스크린샷 2021-07-09 오전 12 26 16" src="https://user-images.githubusercontent.com/14067833/124949193-4d109200-e04c-11eb-963a-a4ece38db190.png">
 
 배포기간 동안 Availability 가 변화없기 때문에 무정지 재배포가 성공한 것으로 확인됨.
 
