@@ -484,7 +484,7 @@ Alarm 서비스 특성상 규모가 크지 않고 데이터를 저장하고 빨�
 
 분석단계에서의 조건 중 하나로 발주취소(order) -> 배송취소(delivery) 간의 호출은 동기식 일관성을 유지하는 트랜잭션으로 처리하기로 하였다. 호출 프로토콜은 이미 앞서 Rest Repository 에 의해 노출되어있는 REST 서비스를 FeignClient 를 이용하여 호출하도록 한다. 
 
-- 배송서비스를 호출하기 위하여 Stub과 (FeignClient) 를 이용하여 Service 대행 인터페이스 (Proxy) 를 구현
+- 배송서비스를 호출하기 위하여 Stub과 FeignClient를 이용하여 Service 대행 인터페이스 Proxy를 구현
 
   ```java
   @FeignClient(name = "delivery", url = "${api.url.delivery}")
@@ -689,7 +689,7 @@ http GET localhost:8088/products
 
   <img width="577" alt="스크린샷 2021-07-08 오후 10 05 11" src="https://user-images.githubusercontent.com/14067833/124926612-b090c480-e038-11eb-8e79-d1c70fe0673a.png">
 
-  - 다시 최소 Connection pool로 부하 다시 정상 확인
+  - 다시 최소 Connection pool로 부하시 정상 확인
 
   <img width="837" alt="스크린샷 2021-07-08 오후 10 20 10" src="https://user-images.githubusercontent.com/14067833/124928638-bbe4ef80-e03a-11eb-8547-190e0bf40412.png">
 
@@ -773,12 +773,12 @@ kubectl set image ...
 # ...
 readinessProbe:
   httpGet:
-		path: '/actuator/health'
-		port: 8080
-	initialDelaySeconds: 10
-	timeoutSeconds: 2
-	periodSeconds: 5
-	failureThreshold: 10
+    path: '/actuator/health'
+    port: 8080
+  initialDelaySeconds: 10
+  timeoutSeconds: 2
+  periodSeconds: 5
+  failureThreshold: 10
 ```
 
 - 동일한 시나리오로 재배포 한 후 Availability 확인:
@@ -794,19 +794,19 @@ readinessProbe:
   ```
   # ...
   args:
-  	# /tmp/healthy 파일 생성하고 30초 후 삭제
-  	- /bin/sh
-  	- -c
-  	- touch /tmp/healthy; sleep 30; rm -rf /tmp/healthy; sleep 600
+    # /tmp/healthy 파일 생성하고 30초 후 삭제
+    - /bin/sh
+    - -c
+    - touch /tmp/healthy; sleep 30; rm -rf /tmp/healthy; sleep 600
   livenessProbe:
-  	exec:
-  		command:
-  			- cat
-  			- /tmp/healthy
-  	initialDelaySeconds: 120
-  	timeoutSeconds: 2
-  	periodSeconds: 5
-  	failureThreshold: 5
+    exec:
+  	  command:
+  		  - cat
+  		  - /tmp/healthy
+    initialDelaySeconds: 120
+    timeoutSeconds: 2
+    periodSeconds: 5
+    failureThreshold: 5
   ```
 
 - Delivery 기동후 확인
