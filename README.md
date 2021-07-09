@@ -697,7 +697,7 @@ http GET localhost:8088/products
 - Retry 의 설정 (istio)
 - Availability 가 높아진 것을 확인 (siege)
 
-### 오토스케일 아웃
+## 오토스케일 아웃
 
 앞서 CB 는 시스템을 안정되게 운영할 수 있게 해줬지만 사용자의 요청을 100% 받아들여주지 못했기 때문에 이에 대한 보완책으로 자동화된 확장 기능을 적용하고자 한다.
 
@@ -719,7 +719,7 @@ http GET localhost:8088/products
 
 ​		<img width="866" alt="스크린샷 2021-07-08 오후 11 21 32" src="https://user-images.githubusercontent.com/14067833/124938476-4a5d6f00-e043-11eb-9624-be9114b74e5d.png">
 
-- CB 에서 했던 방식대로 동시사용자 50명, 워크로드를 1분 동안 걸어준다.
+- CB 에서 했던 방식대로 동시 사용자 50명, 워크로드를 1분 동안 걸어준다.
 
   ```shell
   siege -c50 -t60S -v --content-type "application/json" 'http://delivery:8080/deliveries POST {"orderId": 1, "productId": 1, "quantity": 3, "status": "delivery"}'
