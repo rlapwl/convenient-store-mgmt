@@ -800,9 +800,9 @@ readinessProbe:
     - touch /tmp/healthy; sleep 30; rm -rf /tmp/healthy; sleep 600
   livenessProbe:
     exec:
-  	  command:
-  		  - cat
-  		  - /tmp/healthy
+      command:
+        - cat
+        - /tmp/healthy
     initialDelaySeconds: 120
     timeoutSeconds: 2
     periodSeconds: 5
